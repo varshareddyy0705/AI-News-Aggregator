@@ -1,0 +1,269 @@
+{% extends 'news/base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="text-primary">
+                        <i class="fas fa-calendar-week"></i> 
+                        {% if specific_date %}
+                            News for {{ specific_date }}
+                        {% else %}
+                            Last {{ current_days }} Days News
+                        {% endif %}
+                    </h2>
+                    <p class="text-muted mb-0">
+                        Showing {{ total_news_count }} articles 
+                        {% if specific_date %}
+                            from {{ specific_date }}
+                        {% else %}
+                            from the past {{ current_days }} days
+                        {% endif %}
+                        across all categories
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'all_news' %}" class="btn btn-info btn-sm me-2">
+                        <i class="fas fa-list"></i> All News
+                    </a>
+                    <a href="{% url 'live_news' %}" class="btn btn-danger btn-sm me-2">
+                        <i class="fas fa-broadcast-tower"></i> Live News
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Date Filter Section -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-filter"></i> Filter by Date
+                    </h5>
+                    <div class="row g-3">
+                        <!-- Days Filter -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Select Days Range:</label>
+                            <div class="btn-group d-flex flex-wrap" role="group">
+                                <a href="?days=1" class="btn btn-outline-primary {% if current_days == 1 %}active{% endif %}">
+                                    Today
+                                </a>
+                                <a href="?days=3" class="btn btn-outline-primary {% if current_days == 3 %}active{% endif %}">
+                                    3 Days
+                                </a>
+                                <a href="?days=7" class="btn btn-outline-primary {% if current_days == 7 %}active{% endif %}">
+                                    7 Days
+                                </a>
+                                <a href="?days=10" class="btn btn-outline-primary {% if current_days == 10 %}active{% endif %}">
+                                    10 Days
+                                </a>
+                                <a href="?days=15" class="btn btn-outline-primary {% if current_days == 15 %}active{% endif %}">
+                                    15 Days
+                                </a>
+                                <a href="?days=30" class="btn btn-outline-primary {% if current_days == 30 %}active{% endif %}">
+                                    10 Days
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Specific Date Filter -->
+                        <div class="col-md-6">
+                            <label for="date-picker" class="form-label fw-bold">Or Select Specific Date:</label>
+                            <form method="get" action="{% url 'ten_day_news' %}" class="d-flex gap-2">
+                                <input type="date" 
+                                       id="date-picker" 
+                                       name="date" 
+                                       class="form-control" 
+                                       value="{{ specific_date }}"
+                                       max="{% now 'Y-m-d' %}">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Go
+                                </button>
+                                {% if specific_date %}
+                                <a href="{% url 'ten_day_news' %}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                                {% endif %}
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Date Links -->
+                    <div class="mt-3">
+                        <label class="form-label fw-bold">Quick Date Selection:</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% load tz %}
+                            {% now "Y-m-d" as today %}
+                            <a href="?date={{ today }}" class="btn btn-sm btn-outline-success">
+                                <i class="fas fa-calendar-day"></i> Today ({{ today }})
+                            </a>
+                            {% now "Y-m-d" as today %}
+                            <!-- Generate links for last 10 days -->
+                            <script>
+                                // JavaScript to generate date links
+                                const today = new Date();
+                                const container = document.currentScript.previousElementSibling;
+                                for(let i = 1; i <= 10; i++) {
+                                    const date = new Date(today);
+                                    date.setDate(date.getDate() - i);
+                                    const dateStr = date.toISOString().split('T')[0];
+                                    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                                       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                                    const dateDisplay = `${monthNames[date.getMonth()]} ${date.getDate()}`;
+                                    const link = document.createElement('a');
+                                    link.href = `?date=${dateStr}`;
+                                    link.className = 'btn btn-sm btn-outline-info';
+                                    link.innerHTML = `${dateDisplay}`;
+                                    container.parentNode.insertBefore(link, container.nextSibling);
+                                }
+                            </script>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if object_list %}
+                <div class="row">
+                    {% for headline in object_list %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100 shadow-sm border-0">
+                            {% if headline.image %}
+                            <img src="{{ headline.image }}" class="card-img-top" alt="News Image" style="height: 200px; object-fit: cover;">
+                            {% else %}
+                            <img src="/media/default.jpg" class="card-img-top" alt="Default Image" style="height: 200px; object-fit: cover;">
+                            {% endif %}
+                            <div class="card-body d-flex flex-column">
+                                <div class="mb-2">
+                                    <span class="badge bg-primary">{{ headline.category }}</span>
+                                    {% if headline.published_date %}
+                                        <small class="text-muted ms-2">
+                                            <i class="fas fa-clock"></i> {{ headline.published_date|date:"M d, Y g:i A" }}
+                                        </small>
+                                    {% else %}
+                                        <small class="text-muted ms-2">
+                                            <i class="fas fa-plus-circle"></i> {{ headline.created_at|date:"M d, Y g:i A" }}
+                                        </small>
+                                    {% endif %}
+                                </div>
+                                <h6 class="card-title">{{ headline.title|truncatechars:80 }}</h6>
+                                <div class="mt-auto">
+                                    <small class="text-muted">
+                                        <i class="fas fa-newspaper"></i> Source: {{ headline.source }}
+                                    </small>
+                                    <br>
+                                    <a href="{{ headline.url }}" target="_blank" class="btn btn-outline-primary btn-sm mt-2">
+                                        Read More <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if current_days != 10 %}&days={{ current_days }}{% endif %}{% if specific_date %}&date={{ specific_date }}{% endif %}">
+                                <i class="fas fa-angle-double-left"></i> First
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if current_days != 10 %}&days={{ current_days }}{% endif %}{% if specific_date %}&date={{ specific_date }}{% endif %}">
+                                <i class="fas fa-angle-left"></i> Previous
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_days != 10 %}&days={{ current_days }}{% endif %}{% if specific_date %}&date={{ specific_date }}{% endif %}">
+                                Next <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if current_days != 10 %}&days={{ current_days }}{% endif %}{% if specific_date %}&date={{ specific_date }}{% endif %}">
+                                Last <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-calendar-times fa-4x text-muted"></i>
+                    </div>
+                    <h4 class="text-muted">
+                        {% if specific_date %}
+                            No news found for {{ specific_date }}
+                        {% else %}
+                            No news from the last {{ current_days }} days
+                        {% endif %}
+                    </h4>
+                    <p class="text-muted">
+                        {% if specific_date %}
+                            Try selecting a different date or go back to the date range view.
+                        {% else %}
+                            It looks like there's no news available from the past {{ current_days }} days. Try refreshing to get the latest articles.
+                        {% endif %}
+                    </p>
+                    <div class="mt-3">
+                        {% if specific_date %}
+                        <a href="{% url 'ten_day_news' %}" class="btn btn-primary me-2">
+                            <i class="fas fa-calendar-week"></i> View 10 Days News
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'scrape_all' %}" class="btn btn-success">
+                            <i class="fas fa-sync-alt"></i> Scrape All News
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+.btn-outline-primary:hover {
+    transform: scale(1.05);
+}
+
+.btn-group .btn {
+    flex: 1;
+    min-width: 80px;
+}
+
+.form-label.fw-bold {
+    font-weight: 600;
+    color: #333;
+}
+
+#date-picker {
+    max-width: 200px;
+}
+</style>
+{% endblock %}
